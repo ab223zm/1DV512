@@ -19,11 +19,14 @@ public class Philosopher implements Runnable {
 	private double hungryTime = 0;
 	
 	//help variables that will measure the hunger tiem of the philosophers
-	private double startHunger;
-	private double endHunger;
+	public double startHunger;
+	public double endHunger;
 	
 	//help variable that will only be true when a philosopher is done eating and that can't be changed more than once
-	private volatile boolean fed = false;
+	public volatile boolean fed = false;
+	
+	//help variable to keep track of what the philosopher is doing
+	int action;
 	
 	public Philosopher(int id, ChopStick leftChopStick, ChopStick rightChopStick, int seed) {
 		this.id = id;
@@ -102,37 +105,47 @@ public class Philosopher implements Runnable {
 
 	@Override
 	public void run(){
-		//we start to measure the hunger time with the help of System time
-		startHunger = System.currentTimeMillis();
 		//while the philosophers have not eaten/are not done eating
-		while (!fed) {
+		while (!fed) try{
+			//we start to measure the hunger time with the help of System time
+			startHunger = System.currentTimeMillis();
 			//first the philosophers thinks
 			think();
+			printAction();
 			//then the philosopher gets hungry 
 			hungry();
+			printAction();
 			//if deadlock found, then exit the system
 			if (leftChopStick.getQueueLength()>0)
-				System.exit(-1);
-			else
-				//we need to use a try/catch statement in order to be able to lock the Chopsticks
-				try {//try to pick up and lock the left Chopstick
+				System.exit(0);
+			else{
+				//try to pick up and lock the left Chopstick
 					if(leftChopStick.myLock.tryLock(1, TimeUnit.MILLISECONDS)){
+						action = 4;
+						printAction();
 						//try to pick up and lock the other Chopstick
-						if(rightChopStick.myLock.tryLock(2, TimeUnit.MILLISECONDS)){
+						if(rightChopStick.myLock.tryLock(1, TimeUnit.MILLISECONDS)){
+							action = 5;
+							printAction();
 							//we have to stop measuring the hunger
 							endHunger = System.currentTimeMillis();
 							//the hungry time is increased with the measured time
-							hungryTime = hungryTime + (endHunger - startHunger);			
+							hungryTime = hungryTime + (endHunger - startHunger);	
 							//the philosopher can finally eat
 							eat();
+							printAction();
 							//first he puts down the right Chopstick
 							rightChopStick.myLock.unlock();
+							action = 6; 
+							printAction();
 						} //then the philosopher puts down the left Chopstick as well
 						leftChopStick.myLock.unlock();
+						action = 7;
+						printAction();
 					}
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
+				} 
+			}catch (InterruptedException e) {
+				e.printStackTrace();
 			}
 		}
 	
@@ -141,23 +154,53 @@ public class Philosopher implements Runnable {
 		fed = bool;
 	}
 		
-	public void think(){
+	public void think() throws InterruptedException{
 		//the thinking time is increased by a random number,generated with the random generator
-		thinkingTime= thinkingTime + randomGenerator.nextInt(980)+10;
+		int rand = randomGenerator.nextInt(1000);
+		thinkingTime= thinkingTime + rand;
 		//increasing the thinking turns as well 
 		numberOfThinkingTurns++;
+		//putting the threads to sleep
+		Thread.sleep(rand);
+		action = 1;
 	}
 	
 	public void hungry(){
 		//increasing only the hungry turns because we are already keeping track of the time 
 		numberOfHungryTurns++;
+		action = 2;
 	}
 	
-	public void eat(){
+	public void eat() throws InterruptedException{
 		//the eating time is increased by a random number,generated with the random generator
-		eatingTime = eatingTime + randomGenerator.nextInt(980)+10;
+		int rand = randomGenerator.nextInt(1000);
+		eatingTime = eatingTime + rand;
 		//increasing the hungry turns as well 
 		numberOfEatingTurns++;
+		//putting the threads to sleep
+		Thread.sleep(rand);
+		action = 3;
+	}
+	
+	//help method to print out what the philosophers are doing
+	public void printAction( ){
+		if (DiningPhilosopher.DEBUG== true){
+			if (action==1)
+				System.out.println("Philosopher "+this.getId()+" is thinking");
+			if (action==2)
+				System.out.println("Philosopher "+this.getId()+" is hungry");
+			if (action==3)
+				System.out.println("Philosopher "+this.getId()+" is eating");
+			if (action==4)
+				System.out.println("Philosopher "+this.getId()+" picked up Chopstick nr "+leftChopStick.getId());
+			if (action==5)
+				System.out.println("Philosopher "+this.getId()+" picked up Chopstick nr "+rightChopStick.getId());
+			if (action==6)
+				System.out.println("Philosopher "+this.getId()+" put down Chopstick nr "+rightChopStick.getId());
+			if(action==7)
+				System.out.println("Philosopher "+this.getId()+" put down Chopstick nr "+leftChopStick.getId());
+		}
+			
 	}
 
 	
