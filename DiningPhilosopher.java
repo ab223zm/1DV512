@@ -13,7 +13,7 @@ public class DiningPhilosopher {
 	 * 		for example: philosopher # is eating; 
 	 * 		philosopher # picked up his left chopstick (chopstick #) 
 	 */
-	public boolean DEBUG = false;
+	public static boolean DEBUG = false;
 	private final int NUMBER_OF_PHILOSOPHERS = 5;
 	private int SIMULATION_TIME = 10000;
 	private int SEED = 0;
@@ -70,12 +70,14 @@ public class DiningPhilosopher {
 			chopSticks.add(new ChopStick(i));
 				
 		//adding the philosophers
-		for (int j=0;j<NUMBER_OF_PHILOSOPHERS;j++){
-			//making sure that the last philosopher will have chopSticks 4 and 0
-			if (j==NUMBER_OF_PHILOSOPHERS-1)
-				philosophers.add(new Philosopher(j+1,chopSticks.get(j), chopSticks.get(0), SEED));
+		for (int j=1;j<=NUMBER_OF_PHILOSOPHERS;j++){
+			Philosopher phil;
+			//making sure that the last philosopher will have chopSticks 0 and 4
+			if (j==NUMBER_OF_PHILOSOPHERS)
+				phil = new Philosopher(j-1,chopSticks.get(0), chopSticks.get(j-1), randomSeed);
 			else
-				philosophers.add(new Philosopher(j+1,chopSticks.get(j), chopSticks.get(j+1), SEED));
+				phil = new Philosopher(j-1,chopSticks.get(j), chopSticks.get(j-1), randomSeed);
+			philosophers.add(phil);
 		}
 		
 	}
